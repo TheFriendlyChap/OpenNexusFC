@@ -13,7 +13,7 @@ using Rust;
 using Oxide.Core.Plugins;
 using System.Linq;
 using Oxide.Game.Rust.Cui;
-using Harmony;
+using HarmonyLib;
 
 
 namespace Oxide.Plugins
@@ -47,7 +47,7 @@ namespace Oxide.Plugins
         [PluginReference]
         private Plugin Backpacks, Economics, ZLevelsRemastered, ServerRewards;
 
-        private HarmonyInstance _harmony; //Harmony Instance
+        private Harmony _harmony; //Harmony Instance TFC:Changed to Harmony
 
         #region Configuration
         public ServerSettings _ServerSettings;
@@ -420,13 +420,13 @@ namespace Oxide.Plugins
             plugin = this;
             _ServerSettings = new ServerSettings();
             //Patch in harmony
-            //_harmony = new HarmonyLib.Harmony(Name + "PATCH");
-            _harmony = HarmonyInstance.Create(Name + "PATCH");
+            _harmony = new HarmonyLib.Harmony(Name + "PATCH");
+            //_harmony = HarmonyLoader.TryLoadMod(Name + "PATCH");
             Type[] patchType =
             {
                 AccessTools.Inner(typeof(OpenNexus), "World_GetServerBrowserMapName"),
             };
-            foreach (var t in patchType) { new PatchProcessor(_harmony, t, HarmonyMethod.Merge(t.GetHarmonyMethods())).Patch(); }
+            // foreach (var t in patchType) { new PatchProcessor(_harmony, t, HarmonyMethod.Merge(t.GetHarmonyMethods())).Patch(); }
         }
 
         private void OnServerInitialized(bool initial)
@@ -1242,7 +1242,7 @@ namespace Oxide.Plugins
             BaseSettings settings = new BaseSettings();
             settings.ProcessPacket(packets);
             //Create heli
-            MiniCopter minicopter = GameManager.server.CreateEntity(settings.prefab) as MiniCopter;
+            PlayerHelicopter minicopter = GameManager.server.CreateEntity(settings.prefab) as PlayerHelicopter;
             if (minicopter == null) return null;
             //spawn and setit up
             minicopter.Spawn();
@@ -1648,8 +1648,8 @@ namespace Oxide.Plugins
                         //put into horse inventory
                         Item item = BuildItem(id, amount, skinid, condition, code, imgdata, oggdata, text, Wmods);
                         if (item == null) return;
-                        item.position = slot;
-                        rh.inventory.Insert(item);
+                        item.position = slot;                     
+                        rh.storageInventory.Insert(item);
                         return;
                     }
                     //BasePlayers items
@@ -1874,9 +1874,9 @@ namespace Oxide.Plugins
                     itemlist.Add(basehorse(horse, FerryPos));
                     data.Add("BaseHorse[" + horse.net.ID.ToString() + "]", itemlist);
                     itemlist = new List<Dictionary<string, string>>();
-                    if (horse.inventory.itemList != null)
+                    if (horse.storageInventory.itemList != null)
                     {
-                        foreach (Item item in horse.inventory.itemList.ToArray())
+                        foreach (Item item in horse.storageInventory.itemList.ToArray())
                         {
                             if (item != null)
                             {
@@ -1889,7 +1889,7 @@ namespace Oxide.Plugins
                     continue;
                 }
                 //create helicopter packet
-                MiniCopter helicopter = entity as MiniCopter;
+                PlayerHelicopter helicopter = entity as PlayerHelicopter;
                 if (helicopter != null)
                 {
                     itemlist = new List<Dictionary<string, string>>();
@@ -2190,7 +2190,7 @@ namespace Oxide.Plugins
             string bags = "";
             //Check if has unlimited fuel mods
             string unlimitedfuel = "False";
-            MiniCopter mc = bv as MiniCopter;
+            PlayerHelicopter mc = bv as PlayerHelicopter;
             if (mc != null && mc.fuelPerSec == 0) { unlimitedfuel = "True"; }
             MotorRowboat boat = bv as MotorRowboat;
             if (boat != null && boat.fuelPerSec == 0) { unlimitedfuel = "True"; }
